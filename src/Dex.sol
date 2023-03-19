@@ -4,6 +4,10 @@ pragma solidity ^0.8.13;
 contract Dex {
     uint256 public number;
 
+    constructor(address tokenX, address tokenY) {
+        
+    }
+
     function setNumber(uint256 newNumber) public {
         number = newNumber;
     }
