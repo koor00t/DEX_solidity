@@ -21,6 +21,7 @@ contract Dex is IDex, ERC20 {
 
     function addLiquidity(uint256 tokenXAmount, uint256 tokenYAmount, uint256 minimumLPToeknAmount) public returns (uint256 LPTokenAmount) {
         require(tokenXAmount > 0 && tokenYAmount > 0, "Token must be not zero.");
+        require(balanceOf(msg.sender) >= LPTokenAmount, "Insufficient LP.");
         reserveX = tokenX.balanceOf(address(this));
         reserveY = tokenY.balanceOf(address(this));
         uint256 liquidity;
@@ -40,15 +41,27 @@ contract Dex is IDex, ERC20 {
         tokenY.transferFrom(msg.sender, address(this), tokenYAmount);
 
         emit AddLiquidity(msg.sender, tokenXAmount, tokenYAmount);
-        return LPTokenAmount;
 
     }
 
     function removeLiquidity(uint256 LPTokenAmount, uint256 minimumTokenXAmount, uint256 minimumTokenYAmount) public override returns (uint256, uint256){
         require(LPTokenAmount > 0, "Token must be not zero.");
-        uint _totalSupply = totalSupply();
+        reserveX = tokenX.balanceOf(address(this));
+        reserveY = tokenY.balanceOf(address(this));
+        uint256 _totalSupply = totalSupply();
+        uint256 tokenXAmount = div(mul(LPTokenAmount, tokenX.balanceOf(address(this))), _totalSupply);
+        uint256 tokenYAmount = div(mul(LPTokenAmount, tokenY.balanceOf(address(this))), _totalSupply);
+        require(tokenXAmount >= minimumTokenXAmount && tokenYAmount >= minimumTokenYAmount, "Minimum liquidity.");
+
+        reserveX -= tokenXAmount;
+        reserveY -= tokenYAmount;
+
+        tokenX.transfer(msg.sender, tokenXAmount);
+        tokenY.transfer(msg.sender, tokenYAmount);
 
         _burn(msg.sender, LPTokenAmount);
+        emit RemoveLiquidity(msg.sender, tokenXAmount, tokenYAmount);
+        return (tokenXAmount, tokenYAmount);
         
     }
 
@@ -91,5 +104,8 @@ contract Dex is IDex, ERC20 {
     function mul(uint x, uint y) internal pure returns (uint z) {
         require(y == 0 || (z=x*y) / y == x, 'ds-math-mul-overflow');
     }
-
+    
+    function div(uint x, uint y) internal pure returns (uint z) {
+        require(y > 0 || (z=x/y) * y == x,"ds-math-div-overflow");
+    }
 }
