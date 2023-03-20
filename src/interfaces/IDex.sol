@@ -15,8 +15,8 @@ interface IDex {
     function removeLiquidity(uint256 LPTokenAmount, uint256 minimumTokenXAmount, uint256 minimumTokenYAmount) external returns (uint256 tokenXAmount, uint256 tokenYAmount);
     function transfer(address to, uint256 lpAmount) external returns (bool);
     
-    event Swap();
-    event AddLiquidity();
-    event RemoveLiquidity();
+    event Swap(address indexed user, uint256 indexed sourceX, uint256 indexed targetY);
+    event AddLiquidity(address indexed lps, uint256 indexed amountX, uint256 indexed amountY);
+    event RemoveLiquidity(address indexed lps, uint256 indexed amountX, uint256 indexed amountY);
 
 }
