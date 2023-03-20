@@ -65,8 +65,40 @@ contract Dex is IDex, ERC20 {
         
     }
 
-    function swap(uint256 tokenXAmount, uint256 tokenYAmount, uint256 tokenMinimumOutputAmount) public override returns (uint256) {
-        require(tokenXAmount > 0 && tokenYAmount > 0, "Token must be not zero.");
+    function swap(uint256 tokenXAmount, uint256 tokenYAmount, uint256 tokenMinimumOutputAmount) public override returns (uint256 outputTokenAmount) {
+        require(tokenXAmount > 0 || tokenYAmount > 0, "Token must be not zero.");
+        require(tokenXAmount == 0 || tokenYAmount == 0, "Only one token can be swap.");
+
+        ERC20 inputToken;
+        ERC20 outputToken;
+        uint256 swapsize;
+
+        if(tokenXAmount > 0) {
+            inputToken = tokenX;
+            outputToken = tokenY;
+            swapsize = tokenXAmount;
+        } else {
+            inputToken = tokenY;
+            outputToken = tokenX;
+            swapsize = tokenYAmount;
+        }
+
+        uint256 inputReserve = inputToken.balanceOf(address(this));
+        uint256 outputReserve = outputToken.balanceOf(address(this));
+
+        uint256 fee = mul(swapsize, (999));
+        //init swap => fee
+        uint256 bs = mul(fee, outputReserve);
+        uint256 tr = add(mul(inputReserve, 1000), fee);
+        outputTokenAmount = div(bs, tr);
+        require(outputTokenAmount >= tokenMinimumOutputAmount, "Not enough Minimum Output.");
+
+        inputToken.transferFrom(msg.sender, address(this), swapsize);
+        outputToken.transfer(msg.sender, outputTokenAmount);
+
+        emit Swap(msg.sender, swapsize, outputTokenAmount);
+        return outputTokenAmount;
+
 
     }
 
