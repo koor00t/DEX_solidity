@@ -28,10 +28,10 @@ contract Dex is IDex, ERC20 {
 
         uint256 _totalSupply = totalSupply();
         if (_totalSupply == 0) {
-            LPTokenAmount = sqrt((tokenXAmount + reserveX) * (tokenYAmount + reserveY) / MINIMUM_LIQUIDITY);
+            LPTokenAmount = _sqrt((tokenXAmount + reserveX) * (tokenYAmount + reserveY) / MINIMUM_LIQUIDITY);
         } else {
             require(reserveX * tokenYAmount == reserveY * tokenXAmount, "Add Liquidity Error");
-            LPTokenAmount = min(_totalSupply * tokenXAmount / reserveX, _totalSupply * tokenYAmount / reserveY);
+            LPTokenAmount = _min(_totalSupply * tokenXAmount / reserveX, _totalSupply * tokenYAmount / reserveY);
         }
         require(LPTokenAmount >= minimumLPToeknAmount, "Minimum LP Error");
         _mint(msg.sender, LPTokenAmount);
@@ -49,8 +49,8 @@ contract Dex is IDex, ERC20 {
         reserveX = tokenX.balanceOf(address(this));
         reserveY = tokenY.balanceOf(address(this));
         uint256 _totalSupply = totalSupply();
-        uint256 tokenXAmount = div(mul(LPTokenAmount, tokenX.balanceOf(address(this))), _totalSupply);
-        uint256 tokenYAmount = div(mul(LPTokenAmount, tokenY.balanceOf(address(this))), _totalSupply);
+        uint256 tokenXAmount = (_mul(LPTokenAmount, tokenX.balanceOf(address(this))) / _totalSupply);
+        uint256 tokenYAmount = (_mul(LPTokenAmount, tokenY.balanceOf(address(this))) / _totalSupply);
         require(tokenXAmount >= minimumTokenXAmount && tokenYAmount >= minimumTokenYAmount, "Minimum liquidity.");
 
         reserveX -= tokenXAmount;
@@ -86,11 +86,11 @@ contract Dex is IDex, ERC20 {
         uint256 inputReserve = inputToken.balanceOf(address(this));
         uint256 outputReserve = outputToken.balanceOf(address(this));
 
-        uint256 fee = mul(swapsize, (999));
+        uint256 fee = _mul(swapsize, (999));
         //init swap => fee
-        uint256 bs = mul(fee, outputReserve);
-        uint256 tr = add(mul(inputReserve, 1000), fee);
-        outputTokenAmount = div(bs, tr);
+        uint256 bs = _mul(fee, outputReserve);
+        uint256 tr = _add(_mul(inputReserve, 1000), fee);
+        outputTokenAmount = (bs / tr);
         require(outputTokenAmount >= tokenMinimumOutputAmount, "Not enough Minimum Output.");
 
         inputToken.transferFrom(msg.sender, address(this), swapsize);
@@ -107,7 +107,7 @@ contract Dex is IDex, ERC20 {
         return true;
     }
 
-    function sqrt(uint y) internal pure returns (uint z) {
+    function _sqrt(uint y) internal pure returns (uint z) {
         if (y > 3) {
             z = y;
             uint x = y / 2 + 1;
@@ -121,23 +121,20 @@ contract Dex is IDex, ERC20 {
         // else z = 0 (default value)
     }
 
-    function min(uint x, uint y) internal pure returns (uint z) {
+    function _min(uint x, uint y) internal pure returns (uint z) {
         z = x < y ? x : y;
     }
 
-    function add(uint x, uint y) internal pure returns (uint z) {
+    function _add(uint x, uint y) internal pure returns (uint z) {
         require((z=x+y) >= x, "ds-math-add-overflow");
     }
 
-    function sub(uint x, uint y) internal pure returns (uint z) {
+    function _sub(uint x, uint y) internal pure returns (uint z) {
         require((z=x-y) <= x, 'ds-math-sub-underflow');
     }
 
-    function mul(uint x, uint y) internal pure returns (uint z) {
+    function _mul(uint x, uint y) internal pure returns (uint z) {
         require(y == 0 || (z=x*y) / y == x, 'ds-math-mul-overflow');
     }
     
-    function div(uint x, uint y) internal pure returns (uint z) {
-        require(y > 0 || (z=x/y) * y == x,"ds-math-div-overflow");
-    }
 }
